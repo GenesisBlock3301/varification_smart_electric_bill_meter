@@ -58,21 +58,33 @@ async function main() {
 			app.use(express.urlencoded({ extended: false }));
 			app.use(express.json());
 			const ecc = require('eosjs-ecc')
+			var cors = require("cors");
+			app.use(
+				cors({
+				  origin: "http://localhost:3001",
+				  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+				  credentials: true,
+				})
+			  );
 
 			const port = 3000;
 
+			app.get("/hello",function(req,res){
+				res.json({status:"Hello working"})
+			})
 			// create hid
 			app.post("/hid", async function (req, res) {
 				const { h_id } = req.body;
-				const key = `hid_${h_id}`;
+				// console.log(h_id.hid)
+				const key = `hid_${h_id.hid}`;
 				try {
 					let result = await contract.evaluateTransaction(
-						'CreateHID', key, h_id
+						'CreateHID', key, h_id.hid
 					);
 					await contract.submitTransaction(
-						'CreateHID', key, h_id
+						'CreateHID', key, h_id.hid
 					);
-					res.send(result.toString());
+					res.json({status:"Successfully created"});
 				} catch (error) {
 					res.status(400).send(error.toString());
 				}
@@ -82,8 +94,10 @@ async function main() {
 			app.post("/hidregister", async function (req, res) {
 				console.log(req.body)
 				const { h_id } = req.body;
-				const key = `hid_${h_id}`;
-				ecc.randomKey().then(privateKey => {
+				const hidKey = `hid_${h_id.reg}`;
+				const key = `register_${h_id.reg}`
+				console.log(key);
+				ecc.randomKey().then(async (privateKey) => {
 					console.log('Private Key:\t', privateKey) // wif
 					console.log('Public Key:\t', ecc.privateToPublic(privateKey)) // EOSkey...
 					let public_key = ecc.privateToPublic(privateKey)
@@ -92,13 +106,13 @@ async function main() {
 					const x = Math.floor(Math.random() * 1000);
 					try {
 						try {
-							let result = contract.evaluateTransaction(
-								'HIDExists', h_id
+							await contract.evaluateTransaction(
+								'HIDExists', hidKey
 							)
-							contract.submitTransaction(
-								'Registration', key, h_id, x, G_x
+							await contract.submitTransaction(
+								'Registration', key, h_id.reg, x, G_x
 							)
-							res.send(result.toString());
+							res.json({status:"Successfully register."})
 						} catch (err) {
 							res.status(400).send(`HID not exist create one.`)
 						}
@@ -106,20 +120,19 @@ async function main() {
 						res.status(400).send(error.toString());
 					}
 				})
+				
 			});
 
 			// check register or not
 			app.post("/checkregister", async function (req, res) {
-
 				const { h_id } = req.body;
-				let key = `register_${h_id}`
+				const key = `register_${h_id.hid}`
+				console.log(key)
 				try {
-					let result = contract.evaluateTransaction(
+					let result = await contract.evaluateTransaction(
 						'FindRegisterd', key
 					)
-					// console.log(JSON.parse(result))
-					res.send("Successfull check register.")
-
+					res.json({data:JSON.parse(result.toString())})
 				} catch (error) {
 					res.status(400).send(error.toString());
 				}
