@@ -9,16 +9,17 @@
 const stringify = require('json-stringify-deterministic');
 const sortKeysRecursive = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
+// const CryptoJS = require("crypto-js");
 
 class App extends Contract {
 
-    async CreateHID(ctx,key,h_id) {
+    async CreateHID(ctx, key, h_id) {
         const exists = await this.HIDExists(ctx, h_id);
         if (exists) {
             throw new Error(`The HID ${h_id} already register!`);
         }
         const hid = {
-            key:key,
+            key: key,
             h_id: h_id,
             docType: "hid"
         };
@@ -26,16 +27,34 @@ class App extends Contract {
         return JSON.stringify(hid);
     }
 
-    async Registration(ctx, key, h_id,x,G_x) {
+    async Registration(ctx, key, h_id, public_key, private_key) {
         const register = {
             key: key,
             h_id: h_id,
-            pr:x,
-            pu:G_x,
+            pr: private_key,
+            pu: public_key,
             docType: "register"
         };
         await ctx.stub.putState(key, Buffer.from(stringify(sortKeysRecursive(register))));
         return JSON.stringify(register);
+    }
+
+    
+    async SendValue(ctx, key, unit_encry, verify) {
+        if (!verify) {
+            throw new Error(`Your signature is invalid`);
+        }
+        // const  unit_value_decryp  = CryptoJS.AES.decrypt(unit_encry, 'secretkey');
+        // var originalUnit = unit_value_decryp.toString(CryptoJS.enc.Utf8);
+        const value = {
+            key: key,
+            unit_encry: unit_encry,
+            verify: verify,
+            docType: "sendvalue"
+        };
+
+        await ctx.stub.putState(key, Buffer.from(stringify(sortKeysRecursive(value))));
+        return JSON.stringify(value);
     }
 
     async FindRegisterd(ctx, key) {

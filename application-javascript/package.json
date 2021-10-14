@@ -15,10 +15,13 @@
     },
     "dependencies": {
         "cors": "^2.8.5",
+        "crypto-js": "^4.1.1",
+        "elliptic": "^6.5.4",
         "eosjs-ecc": "^4.0.7",
         "express": "^4.17.1",
         "fabric-ca-client": "^2.2.4",
         "fabric-network": "^2.2.4",
-        "nodemon": "^2.0.13"
+        "nodemon": "^2.0.13",
+        "sha256": "^0.2.0"
     }
 }
