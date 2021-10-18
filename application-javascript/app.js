@@ -58,7 +58,7 @@ async function main() {
 			const app = express();
 			app.use(express.urlencoded({ extended: false }));
 			app.use(express.json());
-			const ecc = require('eosjs-ecc')
+			const eccrypto = require('eccrypto')
 			const elliptic = require("elliptic")
 			const sha256 = require("sha256")
 			const CryptoJS = require("crypto-js");
@@ -106,7 +106,7 @@ async function main() {
 							'HIDExists', hidKey
 						)
 						await contract.submitTransaction(
-							'Registration', key, hidHash, pubKey.encode("hex").substr(2), privateKey)
+							'Registration', key, hidHash, pubKey.encode("hex"), privateKey)
 						res.json({ status: "Successfully register." })
 					} catch (err) {
 						res.status(400).send(`HID not exist create one.`)
@@ -126,21 +126,24 @@ async function main() {
 				const hidKey = `hid_${hidHash}`;
 				const key = `sendunit_${hidHash}`
 				console.log(h_id, unit_value)
-				const unit_value_encry = CryptoJS.AES.encrypt(unit_value, 'secretkey').toString();
 				const RegKey = `register_${hidHash}`
 				// console.log("Send Unit",hidHash,hidKey,key,unit_value_encry,RegKey)
 				let result = await contract.evaluateTransaction(
 					'FindRegisterd', RegKey
 				)
 				let JsonReg = JSON.parse(result.toString());
-				// console.log(JsonReg.pr)
+				// const unit_value_encry = CryptoJS.AES.encrypt(unit_value, 'secretkey').toString();
+				const unit_value_encry = await eccrypto.encrypt(JsonReg.pu, Buffer.from(unit_value)).toString()
+
+
+				console.log("Unit encryption", unit_value_encry)
 
 				let signature = ec.sign(unit_value_encry, JsonReg.pr, { canonical: true })
 				let hexToDecimal = (x) => ec.keyFromPrivate(x, "hex").getPrivate().toString(10)
 				let pubKeyRecovered = ec.recoverPubKey(
 					hexToDecimal(unit_value_encry), signature, signature.recoveryParam, "hex"
 				);
-				let verify = ec.verify(unit_value_encry,signature,pubKeyRecovered)
+				let verify = ec.verify(unit_value_encry, signature, pubKeyRecovered)
 				console.log(verify)
 				try {
 					try {
